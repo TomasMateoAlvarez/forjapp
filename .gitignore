@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Backend runtime data (local dev DB, not source)
+backend/forja.sqlite
+backend/forja.sqlite-shm
+backend/forja.sqlite-wal
+backend/seed-demo-data.manifest.json
+
+# Build output / caches
+dist/
+*.tsbuildinfo
+
+# iOS user-specific Xcode state
+ios/**/xcuserdata/
+*.xcuserstate
+
+# Claude Code local permission settings (machine-specific)
+.claude/settings.local.json

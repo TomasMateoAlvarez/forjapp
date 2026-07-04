@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg:#15171b;
+  --panel:#1d2025;
+  --panel-2:#22262c;
+  --line:#33383f;
+  --ember:#ff5a36;
+  --brass:#d9a54a;
+  --chalk:#f2f1ec;
+  --steel:#97a0a8;
+  --mono:'IBM Plex Mono', monospace;
+  --disp:'Oswald', sans-serif;
+  --body:'Inter', sans-serif;
+  --sidebar-w: 220px;
+}
+
+*{box-sizing:border-box;}
+html,body{
+  margin:0;
+  background:var(--bg);
+  color:var(--chalk);
+  font-family:var(--body);
+  -webkit-font-smoothing:antialiased;
+  height:100%;
+}
+h1,h2,h3,h4{font-family:var(--disp); text-transform:uppercase; letter-spacing:.3px; margin:0;}
+button{font-family:var(--body); cursor:pointer;}
+input,select{font-family:var(--body);}
+
+/* ─── Shell ──────────────────────────────────────────────── */
+.app-shell{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.main-area{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding-bottom:72px; /* bottom tab height */
+}
+
+/* ─── Sidebar (desktop only) ─────────────────────────────── */
+.sidebar{ display:none; }
+
+/* ─── Topbar (mobile + tablet) ───────────────────────────── */
+.topbar{
+  padding:16px 20px 12px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--panel);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.logo{font-family:var(--disp); font-weight:700; font-size:20px; letter-spacing:2px;}
+.logo span{color:var(--ember);}
+
+/* ─── Content area ───────────────────────────────────────── */
+.content{
+  padding:20px;
+  flex:1;
+  width:100%;
+}
+
+/* ─── Bottom tab bar (mobile + tablet) ───────────────────── */
+.tabbar{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  background:var(--panel);
+  border-top:1px solid var(--line);
+  display:flex;
+  z-index:20;
+}
+.tabbar button{
+  flex:1;
+  background:none;
+  border:none;
+  color:var(--steel);
+  padding:14px 0 12px;
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.tabbar button.active{color:var(--ember);}
+
+/* ─── Cards ──────────────────────────────────────────────── */
+.eyebrow{font-family:var(--mono); font-size:11px; color:var(--brass); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px;}
+.card + .card{margin-top:12px;}
+
+/* ─── Type grid ──────────────────────────────────────────── */
+.type-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+.type-btn{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--chalk);
+  padding:16px 12px;
+  font-family:var(--disp);
+  font-size:15px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  text-align:left;
+}
+.type-btn.active{border-color:var(--ember); color:var(--ember);}
+
+/* ─── Alert ──────────────────────────────────────────────── */
+.alert-banner{
+  background:#2a1f1b; border:1px solid var(--ember); color:var(--ember);
+  border-radius:8px; padding:12px 14px; font-size:13px; margin-top:14px;
+}
+
+/* ─── Exercise rows (Today) ──────────────────────────────── */
+.exercise-row{border-top:1px solid var(--line); padding:14px 0;}
+.exercise-row:first-child{border-top:none;}
+.exercise-row h4{font-size:14px; margin-bottom:8px;}
+.set-label{font-family:var(--mono); font-size:10px; color:var(--steel); text-transform:uppercase; display:block; margin-bottom:4px;}
+.set-row-inputs{display:flex; align-items:center; gap:8px;}
+.set-row-inputs > div{flex:1; min-width:0;}
+.set-row-timer-btn{
+  align-self:flex-end; background:none; border:1px solid var(--brass); border-radius:6px; color:var(--brass);
+  font-size:14px; padding:6px 8px; cursor:pointer; line-height:1; flex-shrink:0;
+}
+.set-row-remove-btn{
+  align-self:flex-end; background:none; border:none; color:var(--ember);
+  font-size:20px; line-height:1; padding:6px 4px; cursor:pointer; flex-shrink:0;
+}
+
+/* ─── Buttons ────────────────────────────────────────────── */
+.btn-primary{
+  width:100%; background:var(--ember); border:none; color:#15171b; font-weight:600;
+  padding:14px; border-radius:8px; font-size:14px; letter-spacing:.3px; margin-top:16px;
+  font-family:var(--disp); text-transform:uppercase;
+}
+.btn-primary:disabled{opacity:.4;}
+.btn-secondary{
+  background:transparent; border:1px solid var(--brass); color:var(--brass);
+  padding:8px 14px; border-radius:6px; font-size:12px;
+}
+
+/* ─── Sessions / History ─────────────────────────────────── */
+.session-item{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-top:1px solid var(--line);}
+.session-item:first-child{border-top:none;}
+.session-date{font-family:var(--mono); font-size:12px; color:var(--steel);}
+.session-label{font-family:var(--disp); text-transform:uppercase; font-size:14px;}
+
+.hist-list button{
+  display:block; width:100%; text-align:left; background:none; border:none; color:var(--chalk);
+  padding:10px 0; border-top:1px solid var(--line); font-size:14px;
+}
+.hist-list button:first-child{border-top:none;}
+.hist-list .meta{color:var(--steel); font-size:12px; font-family:var(--mono);}
+
+table.hist-table{width:100%; border-collapse:collapse; margin-top:10px; font-family:var(--mono); font-size:13px;}
+table.hist-table th{text-align:left; color:var(--steel); font-size:10px; text-transform:uppercase; padding:6px 4px; border-bottom:1px solid var(--line);}
+table.hist-table td{padding:8px 4px; border-bottom:1px solid #262a30; color:var(--brass); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100px;}
+table.hist-table td:first-child{color:var(--chalk); white-space:normal; word-break:break-word; max-width:none; font-size:12px;}
+
+/* ─── Planning ───────────────────────────────────────────── */
+.plan-day{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); gap:10px;}
+.plan-day:first-child{border-top:none;}
+.plan-day .dow{font-family:var(--mono); font-size:11px; color:var(--steel); width:38px; flex-shrink:0;}
+.plan-day select{
+  flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--chalk); border-radius:6px; padding:8px; min-width:0;
+}
+.plan-day .done-badge{font-family:var(--mono); font-size:10px; color:var(--ember); border:1px solid var(--ember); border-radius:20px; padding:3px 8px; flex-shrink:0; white-space:nowrap;}
+
+/* ─── Biometrics ─────────────────────────────────────────── */
+.biom-inputs{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.biom-inputs label{font-family:var(--mono); font-size:10px; color:var(--steel); text-transform:uppercase; display:block; margin-bottom:4px;}
+.biom-inputs input, .biom-inputs select{
+  width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--chalk); padding:8px;
+}
+
+/* ─── Misc ───────────────────────────────────────────────── */
+.muted{color:var(--steel); font-size:13px;}
+.status-msg{font-family:var(--mono); font-size:12px; color:var(--brass); margin-top:10px;}
+
+/* ─── Swipe-to-delete (Routines web) ────────────────────── */
+.swipe-row-delete-hover{opacity:0; pointer-events:none;}
+@media (hover:hover){
+  .swipe-row:hover .swipe-row-delete-hover{opacity:1; pointer-events:auto;}
+}
+@media (hover:none){
+  .swipe-row-delete-hover{display:none;}
+}
+
+/* ─── Segmented control ──────────────────────────────────── */
+.seg-ctrl{display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:3px; gap:3px; margin-bottom:14px;}
+.seg-ctrl button{flex:1; background:none; border:none; color:var(--steel); font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.5px; padding:7px 4px; border-radius:6px; cursor:pointer; transition:background .15s,color .15s;}
+.seg-ctrl button.active{background:var(--panel); color:var(--chalk); box-shadow:0 1px 3px rgba(0,0,0,.4);}
+
+/* ─── Today split layout ─────────────────────────────────── */
+.today-layout{ display:block; }
+
+/* Mobile: when session active, hide the selector */
+@media (max-width:1023px){
+  .today-layout--active .today-selector{ display:none; }
+  .today-session:empty{ display:none; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLET  ≥ 640px
+   ══════════════════════════════════════════════════════════ */
+@media (min-width:640px){
+  .content{
+    padding:24px 32px;
+    max-width:720px;
+    margin:0 auto;
+  }
+  .type-grid{ grid-template-columns:repeat(3,1fr); gap:12px; }
+  .type-btn{ font-size:14px; }
+  .card{ padding:20px; }
+  .biom-inputs{ grid-template-columns:repeat(3,1fr); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DESKTOP  ≥ 1024px — sidebar nav, full-width content
+   ══════════════════════════════════════════════════════════ */
+@media (min-width:1024px){
+
+  /* Shell becomes a row: sidebar | main-area */
+  .app-shell{ flex-direction:row; }
+
+  /* Sidebar visible */
+  .sidebar{
+    display:flex;
+    flex-direction:column;
+    width:var(--sidebar-w);
+    min-width:var(--sidebar-w);
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    height:100vh;
+    position:sticky;
+    top:0;
+    overflow-y:auto;
+    z-index:30;
+  }
+  .sidebar-logo{
+    padding:24px 20px 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .sidebar-nav{
+    display:flex;
+    flex-direction:column;
+    padding:8px 0;
+    flex:1;
+  }
+  .sidebar-nav-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--steel);
+    padding:13px 20px;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    cursor:pointer;
+    text-align:left;
+    transition:color .15s, background .15s;
+    border-radius:0;
+  }
+  .sidebar-nav-btn:hover{ color:var(--chalk); background:rgba(255,255,255,0.04); }
+  .sidebar-nav-btn.active{
+    color:var(--ember);
+    background:rgba(255,90,54,0.08);
+    border-left:2px solid var(--ember);
+    padding-left:18px;
+  }
+  .sidebar-nav-icon{ font-size:14px; width:18px; text-align:center; }
+
+  /* Main area scrolls independently */
+  .main-area{
+    flex:1;
+    overflow-y:auto;
+    height:100vh;
+    padding-bottom:0;
+  }
+
+  /* Hide mobile nav elements */
+  .topbar{ display:none; }
+  .tabbar{ display:none; }
+
+  /* Content inside main area */
+  .content{
+    padding:32px 48px;
+    max-width:900px;
+    margin:0 auto;
+  }
+
+  /* Type grid: 4 cols on desktop */
+  .type-grid{ grid-template-columns:repeat(4,1fr); gap:12px; }
+  .type-btn{ padding:18px 14px; font-size:15px; }
+
+  /* Today: selector + active session split 50/50 */
+  .today-layout{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  /* Inside the half-width selector panel, 2 cols fit better */
+  .today-selector .type-grid{ grid-template-columns:repeat(2,1fr); }
+  .today-session .card{ margin-top:0; }
+
+  /* Routines: type list + exercise panel side by side */
+  .routines-layout{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  .routines-list-col{ min-width:0; }
+  .routines-detail-col{ min-width:0; }
+
+  /* Planning: calendar narrower, history wider */
+  .planning-history-layout{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    align-items:start;
+  }
+
+  /* Wider table cells on desktop */
+  table.hist-table td{ max-width:160px; }
+
+  /* Biometrics: 2-col form layout on desktop */
+  .biom-inputs{ grid-template-columns:repeat(3,1fr); }
+
+  .card{ border-radius:10px; padding:20px; }
+  .card + .card{ margin-top:16px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   NARROW MOBILE  ≤ 360px
+   ══════════════════════════════════════════════════════════ */
+@media (max-width:360px){
+  .content{ padding:12px; }
+  h2{ font-size:20px; }
+  .type-btn{ padding:13px 8px; font-size:13px; }
+  .type-grid{ gap:8px; }
+  .set-row-inputs{ gap:5px; }
+  .set-row-inputs input{ font-size:13px; padding:6px; }
+  .set-row-timer-btn{ font-size:12px; padding:6px; }
+  .set-row-remove-btn{ font-size:18px; padding:6px 2px; }
+  .plan-day select{ font-size:12px; padding:6px 4px; }
+  .plan-day .dow{ font-size:10px; width:30px; }
+  .card{ padding:12px; }
+}

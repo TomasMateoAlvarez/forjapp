@@ -1,0 +1,9 @@
+{
+  "name": "FORJA",
+  "short_name": "FORJA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#15171b",
+  "theme_color": "#15171b",
+  "icons": []
+}
