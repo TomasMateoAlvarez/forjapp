@@ -1,0 +1,23 @@
+name: Keep-alive backend
+
+on:
+  schedule:
+    # Cada 10 minutos. Render (free) duerme el servicio tras 15 min de
+    # inactividad — este ping evita que llegue a dormirse mientras dura
+    # el piloto con amigos.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: |
+          set -e
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://forjapp-backend.onrender.com/api/health)
+          echo "Status: $status"
+          if [ "$status" != "200" ]; then
+            echo "El backend respondio $status en vez de 200"
+            exit 1
+          fi
