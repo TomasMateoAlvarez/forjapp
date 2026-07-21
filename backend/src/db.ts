@@ -27,6 +27,17 @@ function resolveConnectionString(): string | undefined {
 
 export const pool = new Pool({ connectionString: resolveConnectionString() });
 
+// Sin este listener, un error en un cliente inactivo del pool (por ejemplo,
+// Neon cerrando la conexión por inactividad tras su scale-to-zero) se propaga
+// como excepción no capturada y tira abajo TODO el proceso de Node — no solo
+// esa conexión. Esto explica reinicios silenciosos del server en producción
+// (sin ningún log de la request que falló, porque el proceso ya había
+// muerto) que se manifestaban como 503 intermitentes en rutas que tocan la
+// base. Ver https://node-postgres.com/apis/pool#error
+pool.on("error", (err) => {
+  console.error("Error inesperado en un cliente inactivo del pool de Postgres:", err);
+});
+
 type Params = unknown[] | Record<string, unknown>;
 
 // Traduce `?` posicionales (y `@nombre` con params en forma de objeto, usado
