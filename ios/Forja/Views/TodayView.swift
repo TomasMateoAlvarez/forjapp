@@ -5,12 +5,20 @@ struct SetRow: Identifiable {
     let id = UUID()
     var weight: String
     var reps: String
+    var rir: String
 
-    init(weight: String = "", reps: String = "") {
+    init(weight: String = "", reps: String = "", rir: String = "") {
         self.weight = weight
         self.reps = reps
+        self.rir = rir
     }
 }
+
+let SUGGESTION_LABEL: [String: String] = [
+    "subir_peso": "💡 Subí peso",
+    "mantener": "➡️ Mantené el peso",
+    "bajar": "🔻 Bajá el peso",
+]
 
 struct ExerciseEntry: Identifiable {
     let id = UUID()
@@ -19,12 +27,14 @@ struct ExerciseEntry: Identifiable {
     let latestRef: [LatestSet]
     let restSeconds: Int
     let targetReps: String?
+    var suggestion: ProgressionSuggestion?
 
-    init(name: String, latest: [LatestSet] = [], restSeconds: Int = 90, targetSets: Int? = nil, targetReps: String? = nil) {
+    init(name: String, latest: [LatestSet] = [], restSeconds: Int = 90, targetSets: Int? = nil, targetReps: String? = nil, suggestion: ProgressionSuggestion? = nil) {
         self.name = name
         self.latestRef = latest
         self.restSeconds = restSeconds
         self.targetReps = targetReps
+        self.suggestion = suggestion
         if latest.isEmpty {
             let count = targetSets ?? 1
             sets = (0..<count).map { _ in SetRow() }
@@ -98,6 +108,13 @@ struct TodayView: View {
     @State private var timerRemaining: Int = 0
     @State private var timerTotal: Int = 0
     @State private var timerActive = false
+    @State private var sessionRpe: Int?
+    @State private var sessionStartedAt: Date?
+    @State private var cardioType: String = "cardio"
+    @State private var cardioDuration = ""
+    @State private var cardioNotes = ""
+    @State private var cardioStatus: String?
+    @State private var proEnabled = false
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -190,6 +207,12 @@ struct TodayView: View {
                                         .foregroundColor(.forjaChalk)
                                         .font(.system(size: 14, weight: .medium))
 
+                                    if let suggestion = exercises[exIdx].suggestion {
+                                        Text(SUGGESTION_LABEL[suggestion.action] ?? suggestion.action)
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(.forjaBrass)
+                                    }
+
                                     ForEach(exercises[exIdx].sets.indices, id: \.self) { setIdx in
                                         VStack(alignment: .leading, spacing: 2) {
                                             HStack(spacing: 8) {
@@ -198,11 +221,11 @@ struct TodayView: View {
                                                 forjaField(
                                                     placeholder: (exercises[exIdx].latestRef.isEmpty ? exercises[exIdx].targetReps : nil) ?? "Reps",
                                                     text: $exercises[exIdx].sets[setIdx].reps)
+                                                forjaField(placeholder: "RIR",
+                                                           text: $exercises[exIdx].sets[setIdx].rir)
+                                                    .frame(width: 50)
                                                 Button {
-                                                    let rest = exercises[exIdx].restSeconds
-                                                    timerTotal = rest
-                                                    timerRemaining = rest
-                                                    timerActive = true
+                                                    Task { await startTimerForSet(exIdx: exIdx, setIdx: setIdx) }
                                                 } label: {
                                                     Text("✓")
                                                         .font(.system(size: 14, weight: .semibold))
@@ -238,6 +261,27 @@ struct TodayView: View {
                                     }
                                 }
                                 .padding(.vertical, 8)
+                            }
+
+                            if proEnabled {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("RPE DE LA SESIÓN (OPCIONAL)")
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.forjaSteel)
+                                HStack(spacing: 6) {
+                                    ForEach(1...10, id: \.self) { n in
+                                        Button("\(n)") {
+                                            sessionRpe = sessionRpe == n ? nil : n
+                                        }
+                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(sessionRpe == n ? .forjaBg : .forjaSteel)
+                                        .frame(width: 26, height: 26)
+                                        .background(sessionRpe == n ? Color.forjaBrass : Color.forjaPanel2)
+                                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(sessionRpe == n ? Color.forjaBrass : Color.forjaLine))
+                                        .cornerRadius(5)
+                                    }
+                                }
+                            }
                             }
 
                             ForjaPrimaryButton(title: "Guardar sesión") { Task { await save() } }
@@ -303,6 +347,42 @@ struct TodayView: View {
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.forjaBrass))
                         .cornerRadius(8)
                     }
+
+                    // Cardio/técnico-táctico (Manual Anselmi §2.6): módulo
+                    // aparte de la sobrecarga, con la guía de orden como texto.
+                    // Métricas Pro: solo visible con pro_enabled.
+                    if proEnabled {
+                    ForjaCard {
+                        Text("CARDIO / TÉCNICO-TÁCTICO")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.forjaBrass)
+                        Text("Si hacés cardio el mismo día que sobrecarga, hacelo después — nunca antes. La sesión completa idealmente no debería superar los 90 minutos.")
+                            .font(.system(size: 12))
+                            .foregroundColor(.forjaSteel)
+
+                        Picker("", selection: $cardioType) {
+                            Text("Cardio").tag("cardio")
+                            Text("Técnico-táctico").tag("tecnico_tactico")
+                            Text("Otro").tag("otro")
+                        }
+                        .pickerStyle(.segmented)
+
+                        forjaField(placeholder: "Duración (min)", text: $cardioDuration)
+                        forjaField(placeholder: "Notas (opcional)", text: $cardioNotes)
+
+                        Button("Guardar sesión de cardio") { Task { await saveCardioSession() } }
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.forjaBg)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color.forjaBrass)
+                            .cornerRadius(6)
+
+                        if let cardioStatus {
+                            Text(cardioStatus).font(.system(size: 12, design: .monospaced)).foregroundColor(.forjaBrass)
+                        }
+                    }
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -310,6 +390,8 @@ struct TodayView: View {
             }
             .background(Color.forjaBg.ignoresSafeArea())
             .task {
+                if let profile = try? await APIClient.shared.getProfile() { proEnabled = profile.pro_enabled }
+
                 async let typesTask = APIClient.shared.getWorkoutTypes()
                 async let routinesTask = APIClient.shared.getCustomRoutines()
                 async let plannedTask = APIClient.shared.getPlannedForDate(today)
@@ -348,11 +430,31 @@ struct TodayView: View {
             .cornerRadius(6)
     }
 
+    // Descanso dinámico según %1RM (Manual Anselmi §2.5): si la serie tiene un
+    // peso cargado, le pregunta al backend cuánto descanso conviene según su
+    // intensidad relativa al PR — si falla o no hay peso, usa el default fijo
+    // del ejercicio (no bloqueante).
+    private func startTimerForSet(exIdx: Int, setIdx: Int) async {
+        let ex = exercises[exIdx]
+        let rest: Int
+        if let weight = Double(ex.sets[setIdx].weight), weight > 0,
+           let suggestion = try? await APIClient.shared.getRestSuggestion(exerciseName: ex.name, weightKg: fromDisplay(weight)) {
+            rest = suggestion.rest_seconds
+        } else {
+            rest = ex.restSeconds
+        }
+        timerTotal = rest
+        timerRemaining = rest
+        timerActive = true
+    }
+
     private func select(_ sel: WorkoutSelection) async {
         selected = sel
         statusMessage = nil
         prRecords = []
         timerActive = false; timerRemaining = 0
+        sessionRpe = nil
+        sessionStartedAt = Date()
         loading = true
         defer { loading = false }
 
@@ -372,8 +474,14 @@ struct TodayView: View {
         var built = await withTaskGroup(of: ExerciseEntry.self) { group in
             for info in infos {
                 group.addTask {
-                    let latest = (try? await APIClient.shared.getLatestSets(for: info.exercise_name)) ?? []
-                    return ExerciseEntry(name: info.exercise_name, latest: latest, restSeconds: info.default_rest_seconds, targetSets: info.target_sets, targetReps: info.target_reps)
+                    async let latestTask = APIClient.shared.getLatestSets(for: info.exercise_name)
+                    async let suggestionTask = APIClient.shared.getProgressionSuggestion(exerciseName: info.exercise_name, mode: nil)
+                    let latest = (try? await latestTask) ?? []
+                    let suggestion = try? await suggestionTask
+                    return ExerciseEntry(
+                        name: info.exercise_name, latest: latest, restSeconds: info.default_rest_seconds,
+                        targetSets: info.target_sets, targetReps: info.target_reps,
+                        suggestion: suggestion?.action == "sin_datos" ? nil : suggestion)
                 }
             }
             let names = infos.map(\.exercise_name)
@@ -399,12 +507,27 @@ struct TodayView: View {
         exercises = built
     }
 
+    private func saveCardioSession() async {
+        guard let duration = Int(cardioDuration), duration > 0 else {
+            cardioStatus = "Cargá la duración en minutos."
+            return
+        }
+        let payload = CardioSessionPayload(date: today, activity_type: cardioType, duration_min: duration, notes: cardioNotes.isEmpty ? nil : cardioNotes)
+        do {
+            _ = try await APIClient.shared.createCardioSession(payload)
+            cardioStatus = "Sesión de cardio guardada ✓"
+            cardioDuration = ""; cardioNotes = ""
+        } catch {
+            cardioStatus = "No se pudo guardar. Revisá el backend."
+        }
+    }
+
     private func save() async {
         guard let sel = selected else { return }
         let payload = exercises.compactMap { ex -> SessionExerciseInput? in
             let validSets = ex.sets.compactMap { s -> SessionSetInput? in
                 guard let w = Double(s.weight), let r = Int(s.reps), w >= 0, r > 0 else { return nil }
-                return SessionSetInput(weight_kg: fromDisplay(w), reps: r)
+                return SessionSetInput(weight_kg: fromDisplay(w), reps: r, rir: Int(s.rir))
             }
             return validSets.isEmpty ? nil : SessionExerciseInput(exercise_name: ex.name, sets: validSets)
         }
@@ -412,13 +535,19 @@ struct TodayView: View {
             statusMessage = "Cargá al menos un ejercicio con peso y reps."
             return
         }
-        let sessionPayload: CreateSessionPayload
+        let isoFormatter = ISO8601DateFormatter()
+        let startedAt = sessionStartedAt.map { isoFormatter.string(from: $0) }
+        let endedAt = isoFormatter.string(from: Date())
+        var sessionPayload: CreateSessionPayload
         switch sel {
         case .system(let t):
             sessionPayload = CreateSessionPayload(date: today, workout_type_id: t.id, custom_routine_id: nil, exercises: payload)
         case .custom(let r):
             sessionPayload = CreateSessionPayload(date: today, workout_type_id: nil, custom_routine_id: r.id, exercises: payload)
         }
+        sessionPayload.rpe = sessionRpe
+        sessionPayload.started_at = startedAt
+        sessionPayload.ended_at = endedAt
         do {
             let result = try await APIClient.shared.createSession(sessionPayload)
             prRecords = result.new_records
@@ -432,6 +561,8 @@ struct TodayView: View {
         selected = nil
         exercises = []
         alertMessage = nil
+        sessionRpe = nil
+        sessionStartedAt = nil
     }
 }
 

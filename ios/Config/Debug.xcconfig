@@ -1,0 +1,7 @@
+// URL base de la API para builds de Debug (simulador). En simulador "localhost"
+// apunta al Mac que corre el backend. Para probar en un iPhone físico, cambiá
+// este valor por la IP local del Mac (ipconfig getifaddr en0) — no hace falta
+// tocar código Swift ni regenerar el proyecto, alcanza con editar este archivo.
+// Nota: "//" está escapeado como "/$()/" porque xcconfig lo interpreta como
+// inicio de comentario si aparece literal.
+API_BASE_URL = http:/$()/localhost:4000/api

@@ -14,6 +14,15 @@ struct BiometricsView: View {
     @State private var heightInput = ""
     @State private var heightStatus: String?
 
+    @State private var strengthTests: [StrengthTest] = []
+    @State private var testType: String = "salto_simple"
+    @State private var flightTime = ""
+    @State private var contactTime = ""
+    @State private var dropHeight = ""
+    @State private var testStatus: String?
+
+    @State private var proEnabled = false
+
     @State private var weightGranularity: ChartGranularity = .session
 
     private let feelings: [(Int, String)] = [
@@ -44,6 +53,12 @@ struct BiometricsView: View {
         let id: String
         let label: String
         let weight_kg: Double
+    }
+
+    struct JumpPoint: Identifiable {
+        let id: Int
+        let label: String
+        let jump_height_cm: Double
     }
 
     private func mondayOf(_ dateStr: String) -> String {
@@ -79,6 +94,13 @@ struct BiometricsView: View {
         }
     }
 
+    private var jumpChartData: [JumpPoint] {
+        strengthTests
+            .filter { $0.test_type == "salto_simple" }
+            .reversed()
+            .map { JumpPoint(id: $0.id, label: String($0.date.dropFirst(5)), jump_height_cm: $0.jump_height_cm) }
+    }
+
     private var latestWeight: Double? {
         history.first { $0.weight_kg != nil }?.weight_kg
     }
@@ -101,7 +123,7 @@ struct BiometricsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    ForjaEyebrow(text: "Perfil · \(today)")
+                    ForjaEyebrow(text: "Biometría · \(today)")
 
                     HStack(alignment: .firstTextBaseline) {
                         Text("¿Cómo estás hoy?")
@@ -115,6 +137,8 @@ struct BiometricsView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 90)
                     }
+
+                    AccountView()
 
                     // Height (master data) + IMC
                     ForjaCard {
@@ -204,6 +228,69 @@ struct BiometricsView: View {
                         Text(statusMessage).font(.system(size: 12, design: .monospaced)).foregroundColor(.forjaBrass)
                     }
 
+                    // Test de salto/pliometría (Manual Anselmi §1.4) — sin
+                    // plataforma real, alcanza con tiempo de vuelo cronometrado.
+                    // Métricas Pro: solo visible con pro_enabled (Perfil → Métricas Pro).
+                    if proEnabled {
+                    ForjaCard {
+                        Text("TEST DE SALTO")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(.forjaSteel)
+                        Text("Cronometrá el tiempo de vuelo del salto y cargalo acá. Para drop jump, sumá tiempo de contacto y altura de caída.")
+                            .font(.system(size: 12))
+                            .foregroundColor(.forjaSteel)
+
+                        Picker("", selection: $testType) {
+                            Text("Salto simple").tag("salto_simple")
+                            Text("Drop jump").tag("drop_jump")
+                        }
+                        .pickerStyle(.segmented)
+
+                        forjaField(placeholder: "Tiempo de vuelo (s)", text: $flightTime)
+                        if testType == "drop_jump" {
+                            forjaField(placeholder: "Tiempo de contacto (s)", text: $contactTime)
+                            forjaField(placeholder: "Altura de caída (cm)", text: $dropHeight)
+                        }
+
+                        Button("Guardar test") { Task { await saveStrengthTest() } }
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.forjaBg)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color.forjaBrass)
+                            .cornerRadius(6)
+
+                        if let testStatus {
+                            Text(testStatus).font(.system(size: 12, design: .monospaced)).foregroundColor(.forjaBrass)
+                        }
+
+                        if jumpChartData.count >= 2 {
+                            Text("ALTURA DE SALTO (CM)")
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundColor(.forjaSteel)
+                                .padding(.top, 6)
+                            Chart(jumpChartData) { point in
+                                LineMark(x: .value("Fecha", point.label), y: .value("Altura", point.jump_height_cm))
+                                    .foregroundStyle(Color.forjaBrass)
+                                PointMark(x: .value("Fecha", point.label), y: .value("Altura", point.jump_height_cm))
+                                    .foregroundStyle(Color.forjaBrass)
+                            }
+                            .frame(height: 120)
+                            .chartXAxis { AxisMarks { _ in AxisValueLabel().foregroundStyle(Color.forjaSteel) } }
+                            .chartYAxis { AxisMarks(position: .leading) { _ in AxisValueLabel().foregroundStyle(Color.forjaSteel) } }
+                        }
+
+                        ForEach(strengthTests) { t in
+                            HStack {
+                                Text(t.date).font(.system(size: 12, design: .monospaced)).foregroundColor(.forjaSteel)
+                                Spacer()
+                                Text(strengthTestSummary(t)).font(.system(size: 12)).foregroundColor(.forjaSteel)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                    }
+
                     // Weight chart with granularity
                     if weightChartData.count >= 2 {
                         ForjaCard {
@@ -269,7 +356,11 @@ struct BiometricsView: View {
             .background(Color.forjaBg.ignoresSafeArea())
             .task {
                 history = (try? await APIClient.shared.getBiometrics()) ?? []
-                if let p = try? await APIClient.shared.getProfile() { heightCm = p.height_cm }
+                if let p = try? await APIClient.shared.getProfile() {
+                    heightCm = p.height_cm
+                    proEnabled = p.pro_enabled
+                }
+                strengthTests = (try? await APIClient.shared.getStrengthTests()) ?? []
             }
         }
     }
@@ -282,6 +373,39 @@ struct BiometricsView: View {
             .foregroundColor(.forjaChalk)
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.forjaLine))
             .cornerRadius(6)
+    }
+
+    private func strengthTestSummary(_ t: StrengthTest) -> String {
+        let label = t.test_type == "drop_jump" ? "Drop jump" : "Salto simple"
+        var summary = "\(label) · \(String(format: "%.1f", t.jump_height_cm))cm"
+        if let q = t.reactive_stability_q {
+            summary += " · Q \(String(format: "%.2f", q))"
+        }
+        return summary
+    }
+
+    private func saveStrengthTest() async {
+        guard let flight = Double(flightTime), flight > 0 else {
+            testStatus = "Cargá el tiempo de vuelo (segundos)."
+            return
+        }
+        if testType == "drop_jump", !(Double(contactTime).map({ $0 > 0 }) ?? false) {
+            testStatus = "Drop jump requiere el tiempo de contacto (segundos)."
+            return
+        }
+        var payload = StrengthTestPayload(date: today, test_type: testType, flight_time_sec: flight)
+        if testType == "drop_jump" {
+            payload.contact_time_sec = Double(contactTime)
+            payload.drop_height_cm = Double(dropHeight)
+        }
+        do {
+            _ = try await APIClient.shared.createStrengthTest(payload)
+            strengthTests = (try? await APIClient.shared.getStrengthTests()) ?? []
+            testStatus = "Test guardado ✓"
+            flightTime = ""; contactTime = ""; dropHeight = ""
+        } catch {
+            testStatus = "No se pudo guardar el test. Revisá el backend."
+        }
     }
 
     private func saveHeight() async {

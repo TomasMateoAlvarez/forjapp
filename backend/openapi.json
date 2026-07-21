@@ -1,0 +1,4651 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FORJA API",
+    "version": "0.1.0",
+    "description": "Generado desde los schemas zod del backend (backend/src/openapi). No editar a mano — correr `npm run openapi:generate` después de cambiar una ruta."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token de sesión emitido por /auth/login o /auth/register."
+      },
+      "clientIdLegacy": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Client-Id",
+        "description": "Modo legacy sin cuenta: identifica la instalación. Se ignora si viene Authorization Bearer válido."
+      }
+    },
+    "schemas": {
+      "MesocyclePhase": {
+        "type": "string",
+        "enum": [
+          "acumulacion",
+          "intensificacion",
+          "descarga",
+          "mantenimiento"
+        ]
+      },
+      "AuthUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          }
+        },
+        "required": [
+          "token",
+          "user"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "nullable": true
+          }
+        }
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "WorkoutType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "muscle_group": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "muscle_group"
+        ]
+      },
+      "ExerciseInfo": {
+        "type": "object",
+        "properties": {
+          "exercise_name": {
+            "type": "string"
+          },
+          "default_rest_seconds": {
+            "type": "number"
+          },
+          "target_sets": {
+            "type": "number",
+            "nullable": true
+          },
+          "target_reps": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "exercise_name",
+          "default_rest_seconds",
+          "target_sets",
+          "target_reps"
+        ]
+      },
+      "ExerciseUpsertBody": {
+        "type": "object",
+        "properties": {
+          "exercise_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_sets": {
+            "type": "number",
+            "nullable": true
+          },
+          "target_reps": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "exercise_name"
+        ]
+      },
+      "ExercisePatchBody": {
+        "type": "object",
+        "properties": {
+          "target_sets": {
+            "type": "number",
+            "nullable": true
+          },
+          "target_reps": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "target_sets",
+          "target_reps"
+        ]
+      },
+      "NewRecord": {
+        "type": "object",
+        "properties": {
+          "exercise_name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "weight",
+              "volume"
+            ]
+          }
+        },
+        "required": [
+          "exercise_name",
+          "type"
+        ]
+      },
+      "SessionResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "workout_type_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "custom_routine_id": {
+            "type": "number",
+            "nullable": true
+          },
+          "new_records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NewRecord"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "new_records"
+        ]
+      },
+      "SessionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "workout_type_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "custom_routine_id": {
+            "type": "number",
+            "nullable": true
+          },
+          "workout_label": {
+            "type": "string"
+          },
+          "rpe": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "workout_type_id",
+          "custom_routine_id",
+          "workout_label",
+          "rpe"
+        ]
+      },
+      "SessionExerciseSet": {
+        "type": "object",
+        "properties": {
+          "exercise_name": {
+            "type": "string"
+          },
+          "weight_kg": {
+            "type": "number"
+          },
+          "reps": {
+            "type": "number"
+          },
+          "set_number": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "exercise_name",
+          "weight_kg",
+          "reps",
+          "set_number"
+        ]
+      },
+      "SessionDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SessionSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tonelaje_total": {
+                "type": "number"
+              },
+              "peso_medio": {
+                "type": "number",
+                "nullable": true
+              },
+              "intensidad_promedio_pct": {
+                "type": "number",
+                "nullable": true
+              },
+              "started_at": {
+                "type": "string",
+                "nullable": true
+              },
+              "ended_at": {
+                "type": "string",
+                "nullable": true
+              },
+              "indice_hipertrofia": {
+                "type": "number",
+                "nullable": true
+              },
+              "coeficiente_hipertrofia": {
+                "type": "number",
+                "nullable": true
+              },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SessionExerciseSet"
+                }
+              }
+            },
+            "required": [
+              "tonelaje_total",
+              "peso_medio",
+              "intensidad_promedio_pct",
+              "started_at",
+              "ended_at",
+              "indice_hipertrofia",
+              "coeficiente_hipertrofia",
+              "exercises"
+            ]
+          }
+        ]
+      },
+      "ExerciseListEntry": {
+        "type": "object",
+        "properties": {
+          "exercise_name": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "number"
+          },
+          "last_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "exercise_name",
+          "entries",
+          "last_date"
+        ]
+      },
+      "PrsByWeekdayEntry": {
+        "type": "object",
+        "properties": {
+          "weekday_index": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "weekday_index",
+          "label",
+          "count"
+        ]
+      },
+      "LatestSet": {
+        "type": "object",
+        "properties": {
+          "weight_kg": {
+            "type": "number"
+          },
+          "reps": {
+            "type": "number"
+          },
+          "set_number": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "weight_kg",
+          "reps",
+          "set_number"
+        ]
+      },
+      "PersonalRecord": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "exercise_name": {
+            "type": "string"
+          },
+          "best_weight_kg": {
+            "type": "number"
+          },
+          "best_weight_date": {
+            "type": "string"
+          },
+          "best_volume": {
+            "type": "number"
+          },
+          "best_volume_date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "exercise_name",
+          "best_weight_kg",
+          "best_weight_date",
+          "best_volume",
+          "best_volume_date"
+        ]
+      },
+      "ProgressionSuggestion": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fuerza",
+              "hipertrofia",
+              "mantenimiento"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "subir_peso",
+              "mantener",
+              "bajar",
+              "sin_datos"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "action",
+          "reason"
+        ]
+      },
+      "RestSuggestion": {
+        "type": "object",
+        "properties": {
+          "rest_seconds": {
+            "type": "number"
+          },
+          "zone": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "fuerza_maxima",
+              "hipertrofia",
+              "adaptacion",
+              "potencia",
+              "otra"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "rest_seconds",
+          "zone",
+          "note"
+        ]
+      },
+      "HistoryEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "weight_kg": {
+            "type": "number"
+          },
+          "reps": {
+            "type": "number"
+          },
+          "set_number": {
+            "type": "number"
+          },
+          "is_warmup": {
+            "type": "boolean"
+          },
+          "tonelaje": {
+            "type": "number",
+            "nullable": true
+          },
+          "intensidad_pct": {
+            "type": "number",
+            "nullable": true
+          },
+          "zona": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "fuerza_maxima",
+              "hipertrofia",
+              "adaptacion",
+              "potencia",
+              "otra"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "weight_kg",
+          "reps",
+          "set_number",
+          "is_warmup",
+          "tonelaje",
+          "intensidad_pct",
+          "zona"
+        ]
+      },
+      "Biometric": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "weight_kg": {
+            "type": "number",
+            "nullable": true
+          },
+          "height_cm": {
+            "type": "number",
+            "nullable": true
+          },
+          "feeling": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "weight_kg",
+          "height_cm",
+          "feeling"
+        ]
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "height_cm": {
+            "type": "number",
+            "nullable": true
+          },
+          "training_mode": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "fuerza",
+              "hipertrofia",
+              "mantenimiento"
+            ]
+          },
+          "pro_enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "height_cm",
+          "training_mode",
+          "pro_enabled"
+        ]
+      },
+      "TrainingModeConfig": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fuerza",
+              "hipertrofia",
+              "mantenimiento"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "rep_range_min": {
+            "type": "number"
+          },
+          "rep_range_max": {
+            "type": "number"
+          },
+          "rest_seconds": {
+            "type": "number"
+          },
+          "progression_rir_threshold": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "mode",
+          "label",
+          "rep_range_min",
+          "rep_range_max",
+          "rest_seconds",
+          "progression_rir_threshold"
+        ]
+      },
+      "SuggestedPlanDay": {
+        "type": "object",
+        "properties": {
+          "weekday_index": {
+            "type": "number"
+          },
+          "workout_type_id": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "weekday_index",
+          "workout_type_id"
+        ]
+      },
+      "SuggestedPlanResponse": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuggestedPlanDay"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "CubanMethodWeek": {
+        "type": "object",
+        "properties": {
+          "week_number": {
+            "type": "number"
+          },
+          "volume_pct": {
+            "type": "number"
+          },
+          "mesocycle_phase": {
+            "type": "string",
+            "enum": [
+              "acumulacion",
+              "intensificacion",
+              "descarga",
+              "mantenimiento"
+            ]
+          }
+        },
+        "required": [
+          "week_number",
+          "volume_pct",
+          "mesocycle_phase"
+        ]
+      },
+      "CubanMethodTemplateResponse": {
+        "type": "object",
+        "properties": {
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CubanMethodWeek"
+            }
+          }
+        },
+        "required": [
+          "weeks"
+        ]
+      },
+      "PlannedDay": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "workout_type_id": {
+            "type": "string"
+          },
+          "workout_label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "workout_type_id",
+          "workout_label"
+        ]
+      },
+      "PlanDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "planned_workout_type_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "planned_label": {
+            "type": "string",
+            "nullable": true
+          },
+          "actual_workout_type_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "actual_label": {
+            "type": "string",
+            "nullable": true
+          },
+          "done": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "planned_workout_type_id",
+          "planned_label",
+          "actual_workout_type_id",
+          "actual_label",
+          "done"
+        ]
+      },
+      "WeeklyPlanResponse": {
+        "type": "object",
+        "properties": {
+          "week_start": {
+            "type": "string"
+          },
+          "mesocycle_phase": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "acumulacion",
+              "intensificacion",
+              "descarga",
+              "mantenimiento"
+            ]
+          },
+          "week_intensity_pct": {
+            "type": "number",
+            "nullable": true
+          },
+          "mesocycle_discrepancy": {
+            "type": "string",
+            "nullable": true
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanDay"
+            }
+          }
+        },
+        "required": [
+          "week_start",
+          "mesocycle_phase",
+          "week_intensity_pct",
+          "mesocycle_discrepancy",
+          "days"
+        ]
+      },
+      "MarkDoneBody": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date"
+        ]
+      },
+      "AlertCheck": {
+        "type": "object",
+        "properties": {
+          "warning": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "trend_warning": {
+            "type": "boolean"
+          },
+          "trend_message": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "warning",
+          "message",
+          "trend_warning",
+          "trend_message"
+        ]
+      },
+      "CustomRoutine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "created_at"
+        ]
+      },
+      "StreakResponse": {
+        "type": "object",
+        "properties": {
+          "weeks": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "weeks"
+        ]
+      },
+      "InviteCode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "LinkRequestBody": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "PendingRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "coach_user_id": {
+            "type": "number"
+          },
+          "coach_email": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "coach_user_id",
+          "coach_email",
+          "created_at"
+        ]
+      },
+      "CoachAthlete": {
+        "type": "object",
+        "properties": {
+          "athlete_user_id": {
+            "type": "number"
+          },
+          "athlete_email": {
+            "type": "string"
+          },
+          "adherence_pct": {
+            "type": "number",
+            "nullable": true
+          },
+          "last_check_in": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "athlete_user_id",
+          "athlete_email",
+          "adherence_pct",
+          "last_check_in"
+        ]
+      },
+      "SessionComment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "coach_email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "comment",
+          "created_at",
+          "coach_email"
+        ]
+      },
+      "SessionCommentBody": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "comment"
+        ]
+      },
+      "StrengthTest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "test_type": {
+            "type": "string",
+            "enum": [
+              "salto_simple",
+              "drop_jump"
+            ]
+          },
+          "flight_time_sec": {
+            "type": "number"
+          },
+          "contact_time_sec": {
+            "type": "number",
+            "nullable": true
+          },
+          "drop_height_cm": {
+            "type": "number",
+            "nullable": true
+          },
+          "jump_height_cm": {
+            "type": "number"
+          },
+          "reactive_stability_q": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "test_type",
+          "flight_time_sec",
+          "contact_time_sec",
+          "drop_height_cm",
+          "jump_height_cm",
+          "reactive_stability_q"
+        ]
+      },
+      "CardioSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "activity_type": {
+            "type": "string",
+            "enum": [
+              "cardio",
+              "tecnico_tactico",
+              "otro"
+            ]
+          },
+          "duration_min": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "activity_type",
+          "duration_min",
+          "notes"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cuenta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email/contraseña inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email ya registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales incorrectas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/migrate-anonymous-data": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "anonymous_client_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "anonymous_client_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Filas movidas por tabla",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "migrated": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "migrated"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta anonymous_client_id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requiere una cuenta autenticada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token revocado (idempotente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workout-types": {
+      "get": {
+        "tags": [
+          "workout-types"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo de tipos de entreno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkoutType"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workout-types/{id}/exercises": {
+      "get": {
+        "tags": [
+          "workout-types"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejercicios predeterminados de ese tipo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExerciseInfo"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tipo no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "workout-types"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseUpsertBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agregado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tipo no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workout-types/{id}/exercises/{exerciseName}": {
+      "patch": {
+        "tags": [
+          "workout-types"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExercisePatchBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "workout-types"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eliminado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "workout_type_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "custom_routine_id": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "exercises": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "exercise_name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "weight_kg": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "reps": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true
+                              },
+                              "is_warmup": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "rir": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 10
+                              }
+                            },
+                            "required": [
+                              "weight_kg",
+                              "reps"
+                            ]
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": [
+                        "exercise_name",
+                        "sets"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "rpe": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "started_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ended_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "date",
+                  "exercises"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sesión guardada, con PRs nuevos si los hay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tipo/rutina no encontrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendario de sesiones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{id}": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de una sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejercicios con al menos un registro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExerciseListEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/prs-by-weekday": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PRs históricos agrupados por día de la semana (siempre 7)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrsByWeekdayEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{exerciseName}/latest": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series de trabajo del último día registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LatestSet"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{exerciseName}/records": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Récord personal (o null)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{exerciseName}/suggestion": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fuerza",
+                "hipertrofia",
+                "mantenimiento"
+              ]
+            },
+            "required": false,
+            "name": "mode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sugerencia de progresión para el próximo set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressionSuggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sin modo elegido (ni en el perfil ni por query)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{exerciseName}/rest-suggestion": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "weight_kg",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Descanso sugerido según intensidad relativa al PR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestSuggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta ?weight_kg=",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{exerciseName}": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evolución completa del ejercicio",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/biometrics": {
+      "post": {
+        "tags": [
+          "biometrics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "weight_kg": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "height_cm": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "feeling": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  }
+                },
+                "required": [
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Check-in guardado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "biometrics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial biométrico",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Biometric"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Altura y modo de entrenamiento guardados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "height_cm": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "training_mode": {
+                    "type": "string",
+                    "enum": [
+                      "fuerza",
+                      "hipertrofia",
+                      "mantenimiento"
+                    ]
+                  },
+                  "pro_enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/training-modes": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo de modos con sus constantes de referencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrainingModeConfig"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan/suggested": {
+      "get": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plantilla de rutina inicial sugerida (Full Body/Push/Pull)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestedPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan/cuban-method-template": {
+      "get": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reparto de volumen por microciclo (método cubano, referencia)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CubanMethodTemplateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan": {
+      "post": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "week_start": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "days": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "workout_type_id": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "workout_type_id"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "mesocycle_phase": {
+                    "type": "string",
+                    "enum": [
+                      "acumulacion",
+                      "intensificacion",
+                      "descarga",
+                      "mantenimiento"
+                    ]
+                  }
+                },
+                "required": [
+                  "week_start",
+                  "days"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plan creado/reemplazado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "week_start": {
+                      "type": "string"
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string"
+                          },
+                          "workout_type_id": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "date",
+                          "workout_type_id"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "week_start",
+                    "days"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan/for-date/{date}": {
+      "get": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "date",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tipo planificado para ese día (o null)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlannedDay"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan/{week_start}": {
+      "get": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "week_start",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Los 7 días con planeado + real",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-plan/{week_start}/mark-done": {
+      "post": {
+        "tags": [
+          "weekly-plan"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "week_start",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkDoneBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Marcado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No hay plan para esa semana",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts/check": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "workout_type_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alerta de 48hs por grupo muscular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tipo no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom-routines": {
+      "get": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rutinas propias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomRoutine"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "exercises": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "name",
+                  "exercises"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rutina creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom-routines/{id}/exercises": {
+      "get": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejercicios de la rutina",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExerciseInfo"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseUpsertBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agregado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom-routines/{id}": {
+      "delete": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eliminada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/custom-routines/{id}/exercises/{exerciseName}": {
+      "patch": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExercisePatchBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "custom-routines"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "exerciseName",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eliminado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exercises": {
+      "get": {
+        "tags": [
+          "exercises"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nombres únicos de ejercicios usados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/streak": {
+      "get": {
+        "tags": [
+          "streak"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semanas consecutivas de plan cumplido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreakResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backup completo en JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/invite-code": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Código (re)generado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Código actual o null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/InviteCode"
+                    },
+                    {
+                      "nullable": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/link-requests": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pedido creado (pending)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Código inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya existe un vínculo con ese atleta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/pending-requests": {
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pedidos de coaches esperando aceptación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingRequest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/link-requests/{id}/accept": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aceptado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/link-requests/{id}/reject": {
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rechazado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/athletes": {
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Atletas vinculados con adherencia agregada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CoachAthlete"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere cuenta real (no alcanza con X-Client-Id legacy)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/sessions/{sessionId}/comments": {
+      "get": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "sessionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comentarios de coach sobre esa sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionComment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin acceso a esta sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sesión no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "sessionId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCommentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comentario creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin vínculo aceptado con el dueño de la sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sesión no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/strength-tests": {
+      "post": {
+        "tags": [
+          "strength-tests"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "test_type": {
+                    "type": "string",
+                    "enum": [
+                      "salto_simple",
+                      "drop_jump"
+                    ]
+                  },
+                  "flight_time_sec": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "contact_time_sec": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "drop_height_cm": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  }
+                },
+                "required": [
+                  "date",
+                  "test_type",
+                  "flight_time_sec"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Test guardado, con altura/Q calculados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrengthTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "strength-tests"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de tests, más reciente primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StrengthTest"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cardio-sessions": {
+      "post": {
+        "tags": [
+          "cardio-sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "activity_type": {
+                    "type": "string",
+                    "enum": [
+                      "cardio",
+                      "tecnico_tactico",
+                      "otro"
+                    ]
+                  },
+                  "duration_min": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "date",
+                  "activity_type",
+                  "duration_min"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sesión de cardio guardada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardioSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cardio-sessions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "clientIdLegacy": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "as_athlete_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de sesiones de cardio, más reciente primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardioSession"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identidad (token inválido o X-Client-Id ausente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

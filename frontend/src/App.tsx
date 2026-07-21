@@ -3,22 +3,38 @@ import { UnitProvider } from "./context/UnitContext";
 import Today from "./pages/Today";
 import Planning from "./pages/Planning";
 import Routines from "./pages/Routines";
+import Profile from "./pages/Profile";
 import Biometrics from "./pages/Biometrics";
+import Coach from "./pages/Coach";
+import RequireAuth from "./components/RequireAuth";
 
-type Tab = "today" | "planning" | "routines" | "biom";
+type Tab = "today" | "planning" | "routines" | "profile" | "biom" | "coach";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "today",    label: "Hoy",           icon: "⚡" },
   { id: "planning", label: "Planificación", icon: "📅" },
   { id: "routines", label: "Rutinas",       icon: "💪" },
-  { id: "biom",     label: "Perfil",        icon: "👤" },
+  { id: "profile",  label: "Perfil",        icon: "👤" },
+  { id: "biom",     label: "Biometría",     icon: "📈" },
+  { id: "coach",    label: "Coach",         icon: "🧑‍🏫" },
 ];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
+  // Atajo "ver historial de este ejercicio": Today.tsx/Routines.tsx piden
+  // abrir un ejercicio puntual en Planificación → Historial. Se limpia apenas
+  // Planning lo consume (ver onConsumedInitialExercise) para que volver a la
+  // tab de Planificación por la nav normal no reabra el mismo ejercicio.
+  const [pendingExercise, setPendingExercise] = useState<string | null>(null);
+
+  function goToExerciseHistory(name: string) {
+    setPendingExercise(name);
+    setTab("planning");
+  }
 
   return (
     <UnitProvider>
+      <RequireAuth>
       <div className="app-shell">
 
         {/* ── Sidebar — visible only on desktop (≥1024px via CSS) ── */}
@@ -49,10 +65,18 @@ export default function App() {
           </div>
 
           <div className="content">
-            {tab === "today"    && <Today />}
-            {tab === "planning" && <Planning onGoToToday={() => setTab("today")} />}
-            {tab === "routines" && <Routines />}
+            {tab === "today"    && <Today onOpenExerciseHistory={goToExerciseHistory} />}
+            {tab === "planning" && (
+              <Planning
+                onGoToToday={() => setTab("today")}
+                openExerciseOnMount={pendingExercise}
+                onConsumedInitialExercise={() => setPendingExercise(null)}
+              />
+            )}
+            {tab === "routines" && <Routines onOpenExerciseHistory={goToExerciseHistory} />}
+            {tab === "profile"  && <Profile />}
             {tab === "biom"     && <Biometrics />}
+            {tab === "coach"    && <Coach />}
           </div>
         </div>
 
@@ -70,6 +94,7 @@ export default function App() {
         </div>
 
       </div>
+      </RequireAuth>
     </UnitProvider>
   );
 }

@@ -1,0 +1,4 @@
+// Deploy a la nube con HTTPS está descartado por ahora (ver PLAN_DESARROLLO_SPRINTS.md) —
+// Release apunta al mismo backend local que Debug. Si en algún momento se
+// despliega el backend con HTTPS, este es el único archivo a cambiar.
+API_BASE_URL = http:/$()/localhost:4000/api

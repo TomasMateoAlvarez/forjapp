@@ -4,6 +4,9 @@ import Charts
 enum PlanningSubTab { case calendar, history }
 
 struct PlanningView: View {
+    var athleteId: Int? = nil
+    var readOnly: Bool = false
+
     @AppStorage("forja_unit") private var unit: String = "kg"
 
     @State private var subTab: PlanningSubTab = .calendar
@@ -19,6 +22,12 @@ struct PlanningView: View {
     // History state
     @State private var sessions: [SessionSummary] = []
     @State private var exerciseList: [ExerciseListEntry] = []
+    @State private var prsByWeekday: [PrsByWeekdayEntry] = []
+    @State private var cardioSessions: [CardioSession] = []
+    @State private var proEnabled = false
+    @State private var expandedSessionId: Int?
+    @State private var sessionDetail: SessionDetail?
+    @State private var sessionDetailLoading = false
     @State private var selectedExercise: String?
     @State private var history: [HistoryEntry] = []
     @State private var exercisePR: PersonalRecord?
@@ -140,8 +149,11 @@ struct PlanningView: View {
             .background(Color.forjaBg.ignoresSafeArea())
             .task {
                 types = (try? await APIClient.shared.getWorkoutTypes()) ?? []
-                sessions = (try? await APIClient.shared.getSessions()) ?? []
-                exerciseList = (try? await APIClient.shared.getExerciseList()) ?? []
+                sessions = (try? await APIClient.shared.getSessions(asAthleteId: athleteId)) ?? []
+                exerciseList = (try? await APIClient.shared.getExerciseList(asAthleteId: athleteId)) ?? []
+                prsByWeekday = (try? await APIClient.shared.getPrsByWeekday(asAthleteId: athleteId)) ?? []
+                cardioSessions = (try? await APIClient.shared.getCardioSessions(asAthleteId: athleteId)) ?? []
+                if let profile = try? await APIClient.shared.getProfile() { proEnabled = profile.pro_enabled }
             }
             .task(id: weekOffset) {
                 await loadPlan()
@@ -149,8 +161,10 @@ struct PlanningView: View {
             .onChange(of: subTab) { _, newTab in
                 if newTab == .history {
                     Task {
-                        sessions = (try? await APIClient.shared.getSessions()) ?? []
-                        exerciseList = (try? await APIClient.shared.getExerciseList()) ?? []
+                        sessions = (try? await APIClient.shared.getSessions(asAthleteId: athleteId)) ?? []
+                        exerciseList = (try? await APIClient.shared.getExerciseList(asAthleteId: athleteId)) ?? []
+                        prsByWeekday = (try? await APIClient.shared.getPrsByWeekday(asAthleteId: athleteId)) ?? []
+                        cardioSessions = (try? await APIClient.shared.getCardioSessions(asAthleteId: athleteId)) ?? []
                     }
                 }
             }
@@ -205,6 +219,22 @@ struct PlanningView: View {
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.forjaLine, lineWidth: 1))
         .cornerRadius(8)
 
+        if !readOnly {
+            Button {
+                Task { await applySuggestedPlan() }
+            } label: {
+                Text("💡 Sugerir rutina inicial (Full Body / Push / Pull)")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.forjaBrass)
+                    .frame(maxWidth: .infinity)
+                    .padding(10)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.forjaBrass, style: StrokeStyle(lineWidth: 1, dash: [4]))
+            )
+        }
+
         ForjaCard {
             ForEach(Array(weekDates.enumerated()), id: \.offset) { i, date in
                 let info = planDays.first(where: { $0.date == date })
@@ -220,15 +250,21 @@ struct PlanningView: View {
                             .foregroundColor(.forjaSteel)
                             .frame(width: 36, alignment: .leading)
 
-                        Picker("", selection: Binding(
-                            get: { selections[date] ?? "" },
-                            set: { selections[date] = $0 }
-                        )) {
-                            Text("Descanso").tag("")
-                            ForEach(types) { t in Text(t.label).tag(t.id) }
+                        if readOnly {
+                            Text(info?.planned_label ?? "Descanso")
+                                .font(.system(size: 13))
+                                .foregroundColor(.forjaChalk)
+                        } else {
+                            Picker("", selection: Binding(
+                                get: { selections[date] ?? "" },
+                                set: { selections[date] = $0 }
+                            )) {
+                                Text("Descanso").tag("")
+                                ForEach(types) { t in Text(t.label).tag(t.id) }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(.forjaChalk)
                         }
-                        .pickerStyle(.menu)
-                        .tint(.forjaChalk)
 
                         Spacer()
 
@@ -238,7 +274,7 @@ struct PlanningView: View {
                                 .foregroundColor(.forjaEmber)
                                 .padding(.horizontal, 8).padding(.vertical, 3)
                                 .overlay(Capsule().stroke(Color.forjaEmber))
-                        } else if showMarcar {
+                        } else if !readOnly && showMarcar {
                             Button("Marcar") { Task { await markDone(date) } }
                                 .font(.system(size: 12))
                                 .foregroundColor(.forjaBrass)
@@ -262,7 +298,9 @@ struct PlanningView: View {
                 .padding(.vertical, 8)
             }
 
-            ForjaPrimaryButton(title: "Guardar plan de la semana") { Task { await save() } }
+            if !readOnly {
+                ForjaPrimaryButton(title: "Guardar plan de la semana") { Task { await save() } }
+            }
 
             if let calStatus {
                 Text(calStatus)
@@ -271,9 +309,11 @@ struct PlanningView: View {
             }
         }
 
-        Text("Los recordatorios push quedan para la versión de producción.")
-            .font(.system(size: 12))
-            .foregroundColor(.forjaSteel)
+        if !readOnly {
+            Text("Al guardar, se agenda un recordatorio local a las 9am para cada día planificado que todavía no esté hecho.")
+                .font(.system(size: 12))
+                .foregroundColor(.forjaSteel)
+        }
     }
 
     // MARK: - History sub-tab
@@ -290,19 +330,81 @@ struct PlanningView: View {
                     .font(.system(size: 13))
             }
             ForEach(sessions) { s in
-                HStack {
-                    Text(s.date)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.forjaSteel)
-                        .fixedSize()
-                    Spacer(minLength: 8)
-                    Text(s.workout_label.uppercased())
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.forjaChalk)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                VStack(alignment: .leading, spacing: 0) {
+                    Button {
+                        Task { await toggleSessionDetail(s.id) }
+                    } label: {
+                        HStack {
+                            Text(s.date)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(.forjaSteel)
+                                .fixedSize()
+                            Spacer(minLength: 8)
+                            Text(s.workout_label.uppercased() + (proEnabled && s.rpe != nil ? " · RPE \(s.rpe!)" : ""))
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.forjaChalk)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    }
+                    .padding(.vertical, 6)
+
+                    if expandedSessionId == s.id {
+                        if sessionDetailLoading {
+                            Text("Cargando…").foregroundColor(.forjaSteel).font(.system(size: 12))
+                        } else if proEnabled, let d = sessionDetail {
+                            VStack(alignment: .leading, spacing: 4) {
+                                sessionStat("Tonelaje total", "\(Int(toDisplay(d.tonelaje_total)))\(unitLabel)")
+                                sessionStat("Peso medio", d.peso_medio.map { "\(String(format: "%.1f", toDisplay($0)))\(unitLabel)" } ?? "—")
+                                sessionStat("Intensidad promedio", d.intensidad_promedio_pct.map { "\(Int($0))%" } ?? "—")
+                                sessionStat("Índice Hipertrofia", d.indice_hipertrofia.map { String(format: "%.1f", $0) } ?? "—")
+                                sessionStat("Coef. Hipertrofia", d.coeficiente_hipertrofia.map { String(format: "%.0f", $0) } ?? "—")
+                            }
+                            .padding(.bottom, 8)
+                        }
+                    }
                 }
-                .padding(.vertical, 6)
+            }
+        }
+
+        if proEnabled && !cardioSessions.isEmpty {
+            ForjaCard {
+                Text("CARDIO / TÉCNICO-TÁCTICO RECIENTE")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.forjaChalk)
+                ForEach(cardioSessions) { c in
+                    HStack {
+                        Text(c.date).font(.system(size: 12, design: .monospaced)).foregroundColor(.forjaSteel)
+                        Spacer()
+                        Text(cardioSummary(c)).font(.system(size: 12)).foregroundColor(.forjaSteel)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+
+        if prsByWeekday.contains(where: { $0.count > 0 }) {
+            ForjaCard {
+                Text("PRS POR DÍA DE LA SEMANA")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.forjaChalk)
+                Text("En qué día tendés a marcar más récords personales.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.forjaSteel)
+                Chart(prsByWeekday) { d in
+                    BarMark(
+                        x: .value("Día", d.label),
+                        y: .value("PRs", d.count)
+                    )
+                    .foregroundStyle(Color.forjaBrass)
+                }
+                .frame(height: 120)
+                .chartXAxis {
+                    AxisMarks { _ in AxisValueLabel().foregroundStyle(Color.forjaSteel) }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { _ in AxisValueLabel().foregroundStyle(Color.forjaSteel) }
+                }
             }
         }
 
@@ -323,8 +425,8 @@ struct PlanningView: View {
                         chartMetric = .orm
                         chartGranularity = .session
                         selectedStat = nil
-                        async let histTask = APIClient.shared.getExerciseHistory(e.exercise_name)
-                        async let prTask = APIClient.shared.getExerciseRecords(e.exercise_name)
+                        async let histTask = APIClient.shared.getExerciseHistory(e.exercise_name, asAthleteId: athleteId)
+                        async let prTask = APIClient.shared.getExerciseRecords(e.exercise_name, asAthleteId: athleteId)
                         history = (try? await histTask) ?? []
                         exercisePR = try? await prTask
                     }
@@ -471,14 +573,43 @@ struct PlanningView: View {
         .padding(.bottom, 8)
     }
 
+    private func cardioSummary(_ c: CardioSession) -> String {
+        let label = c.activity_type == "cardio" ? "Cardio" : c.activity_type == "tecnico_tactico" ? "Técnico-táctico" : "Otro"
+        var summary = "\(label) · \(c.duration_min) min"
+        if let notes = c.notes, !notes.isEmpty { summary += " · \(notes)" }
+        return summary
+    }
+
+    @ViewBuilder
+    private func sessionStat(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.system(size: 11, design: .monospaced)).foregroundColor(.forjaSteel)
+            Spacer()
+            Text(value).font(.system(size: 11, design: .monospaced)).foregroundColor(.forjaChalk)
+        }
+    }
+
     // MARK: - Actions
+
+    private func toggleSessionDetail(_ id: Int) async {
+        if expandedSessionId == id {
+            expandedSessionId = nil
+            sessionDetail = nil
+            return
+        }
+        expandedSessionId = id
+        sessionDetail = nil
+        sessionDetailLoading = true
+        sessionDetail = try? await APIClient.shared.getSessionDetail(id, asAthleteId: athleteId)
+        sessionDetailLoading = false
+    }
 
     private func loadPlan() async {
         calStatus = nil
         selections = [:]
         doneDates = []
         planDays = []
-        if let plan = try? await APIClient.shared.getPlan(weekStart: weekStart) {
+        if let plan = try? await APIClient.shared.getPlan(weekStart: weekStart, asAthleteId: athleteId) {
             planDays = plan.days
             for d in plan.days {
                 if let pid = d.planned_workout_type_id { selections[d.date] = pid }
@@ -496,14 +627,40 @@ struct PlanningView: View {
         do {
             try await APIClient.shared.savePlan(SavePlanPayload(week_start: weekStart, days: days))
             calStatus = "Plan guardado ✓"
+            scheduleReminders(for: days)
         } catch {
             calStatus = "No se pudo guardar."
         }
     }
 
+    private func scheduleReminders(for days: [PlanDayInput]) {
+        NotificationManager.requestAuthorizationIfNeeded()
+        let reminders = days.compactMap { d -> (date: String, label: String)? in
+            guard !doneDates.contains(d.date), let type = types.first(where: { $0.id == d.workout_type_id }) else { return nil }
+            return (d.date, type.label)
+        }
+        NotificationManager.rescheduleWeeklyReminders(days: reminders)
+    }
+
+    private func applySuggestedPlan() async {
+        calStatus = nil
+        guard let suggested = try? await APIClient.shared.getSuggestedPlan() else {
+            calStatus = "No se pudo cargar la rutina sugerida. Probá de nuevo."
+            return
+        }
+        var sel: [String: String] = [:]
+        for day in suggested.days {
+            guard let typeId = day.workout_type_id, day.weekday_index < weekDates.count else { continue }
+            sel[weekDates[day.weekday_index]] = typeId
+        }
+        selections = sel
+        calStatus = "Rutina sugerida cargada — revisala y guardá si te sirve."
+    }
+
     private func markDone(_ date: String) async {
         try? await APIClient.shared.markPlanDayDone(weekStart: weekStart, date: date)
         doneDates.insert(date)
+        NotificationManager.cancelReminder(for: date)
     }
 
     private func isoDate(_ d: Date) -> String {

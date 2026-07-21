@@ -4,21 +4,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "seed:demo": "tsx src/seed-demo-data.ts"
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "seed:demo": "tsx --env-file-if-exists=.env src/seed-demo-data.ts",
+    "test": "tsx --env-file-if-exists=.env.test --test src/lib/dates.test.ts src/routes/sessions.test.ts src/routes/streak.test.ts src/routes/alerts.test.ts src/routes/auth.test.ts src/routes/coach.test.ts src/routes/trainingGuidance.test.ts src/routes/indicators.test.ts src/routes/derivedIndicators.test.ts src/routes/strengthTests.test.ts src/routes/cardioSessions.test.ts",
+    "lint": "eslint src",
+    "openapi:generate": "tsx src/generate-openapi.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.0",
+    "pg": "^8.22.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.4",
+    "@types/pg": "^8.20.0",
+    "eslint": "^9.39.5",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.64.0"
   }
 }

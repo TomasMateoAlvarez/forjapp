@@ -4,10 +4,12 @@
 # Dependencies
 node_modules/
 
-# Backend runtime data (local dev DB, not source)
-backend/forja.sqlite
-backend/forja.sqlite-shm
-backend/forja.sqlite-wal
+# Environment (secretos/config local — usar .env.example como referencia)
+.env
+.env.local
+.env.test
+
+# Backend runtime data (local dev, not source)
 backend/seed-demo-data.manifest.json
 
 # Build output / caches

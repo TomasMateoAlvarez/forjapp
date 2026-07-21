@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { User } from "lucide-react";
-import { api, Biometric } from "../api/client";
+import { api, Biometric, StrengthTest } from "../api/client";
 import ForjaLineChart from "../components/ForjaLineChart";
 import EmptyState from "../components/EmptyState";
+import AccountPanel from "../components/AccountPanel";
 import { useUnit, Unit } from "../context/UnitContext";
 
 type Granularity = "session" | "week" | "month";
@@ -58,10 +59,36 @@ export default function Biometrics() {
 
   const [weightGranularity, setWeightGranularity] = useState<Granularity>("session");
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  const [strengthTests, setStrengthTests] = useState<StrengthTest[]>([]);
+  const [testType, setTestType] = useState<"salto_simple" | "drop_jump">("salto_simple");
+  const [flightTime, setFlightTime] = useState("");
+  const [contactTime, setContactTime] = useState("");
+  const [dropHeight, setDropHeight] = useState("");
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+
+  const [proEnabled, setProEnabled] = useState(false);
+
+  async function loadAll() {
+    setLoadError(false);
+    try {
+      const [bio, profile, tests] = await Promise.all([
+        api.getBiometrics(),
+        api.getProfile(),
+        api.getStrengthTests(),
+      ]);
+      setHistory(bio);
+      setHeightCm(profile.height_cm);
+      setProEnabled(profile.pro_enabled);
+      setStrengthTests(tests);
+    } catch {
+      setLoadError(true);
+    }
+  }
 
   useEffect(() => {
-    api.getBiometrics().then(setHistory).catch(() => {});
-    api.getProfile().then((p) => setHeightCm(p.height_cm)).catch(() => {});
+    loadAll();
   }, []);
 
   async function save() {
@@ -70,10 +97,14 @@ export default function Biometrics() {
       return;
     }
     const weight_kg = weight ? fromDisplay(Number(weight)) : undefined;
-    await api.upsertBiometric({ date: todayISO(), weight_kg, feeling: feeling ?? undefined });
-    setHistory(await api.getBiometrics());
-    setStatus("Check-in de hoy guardado ✓");
-    setWeight(""); setFeeling(null);
+    try {
+      await api.upsertBiometric({ date: todayISO(), weight_kg, feeling: feeling ?? undefined });
+      setHistory(await api.getBiometrics());
+      setStatus("Check-in de hoy guardado ✓");
+      setWeight(""); setFeeling(null);
+    } catch {
+      setStatus("No se pudo guardar el check-in. Revisá tu conexión.");
+    }
   }
 
   async function handleExport() {
@@ -97,12 +128,45 @@ export default function Biometrics() {
   async function saveHeight() {
     const h = Number(heightInput);
     if (!h || h < 50 || h > 280) { setHeightStatus("Altura inválida."); return; }
-    await api.putProfile(h);
-    setHeightCm(h);
-    setEditingHeight(false);
-    setHeightStatus(null);
-    setHeightInput("");
+    try {
+      await api.putProfile({ height_cm: h });
+      setHeightCm(h);
+      setEditingHeight(false);
+      setHeightStatus(null);
+      setHeightInput("");
+    } catch {
+      setHeightStatus("No se pudo guardar la altura. Probá de nuevo.");
+    }
   }
+
+  async function saveStrengthTest() {
+    const flight = Number(flightTime);
+    if (!flight || flight <= 0) { setTestStatus("Cargá el tiempo de vuelo (segundos)."); return; }
+    if (testType === "drop_jump" && (!contactTime || Number(contactTime) <= 0)) {
+      setTestStatus("Drop jump requiere el tiempo de contacto (segundos).");
+      return;
+    }
+    try {
+      await api.createStrengthTest({
+        date: todayISO(),
+        test_type: testType,
+        flight_time_sec: flight,
+        contact_time_sec: testType === "drop_jump" ? Number(contactTime) : undefined,
+        drop_height_cm: testType === "drop_jump" && dropHeight ? Number(dropHeight) : undefined,
+      });
+      setStrengthTests(await api.getStrengthTests());
+      setTestStatus("Test guardado ✓");
+      setFlightTime(""); setContactTime(""); setDropHeight("");
+    } catch {
+      setTestStatus("No se pudo guardar el test. Revisá tu conexión.");
+    }
+  }
+
+  const jumpChartData = strengthTests
+    .filter((t) => t.test_type === "salto_simple")
+    .slice()
+    .reverse()
+    .map((t) => ({ date: t.date, label: t.date.slice(5), value: Math.round(t.jump_height_cm * 10) / 10 }));
 
   // Weight chart with granularity
   const weightChartData = (() => {
@@ -132,7 +196,7 @@ export default function Biometrics() {
 
   return (
     <div>
-      <div className="eyebrow">Perfil · {todayISO()}</div>
+      <div className="eyebrow">Biometría · {todayISO()}</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <h2 style={{ fontSize: 24, margin: 0 }}>¿Cómo estás hoy?</h2>
         <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid var(--line)" }}>
@@ -156,6 +220,8 @@ export default function Biometrics() {
           ))}
         </div>
       </div>
+
+      <AccountPanel />
 
       {/* Height — master data, not in check-in */}
       <div className="card" style={{ marginBottom: 12 }}>
@@ -236,6 +302,67 @@ export default function Biometrics() {
         {status && <div className="status-msg">{status}</div>}
       </div>
 
+      {/* Tests de salto/pliometría (Manual Anselmi §1.4) — sin plataforma
+          real: tiempo de vuelo medido con una app de cronómetro alcanza.
+          Métricas Pro: solo visible con pro_enabled (Perfil → Métricas Pro). */}
+      {proEnabled && (
+      <div className="card" style={{ marginTop: 12 }}>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Test de salto</p>
+        <p className="muted" style={{ marginBottom: 10 }}>
+          Cronometrá el tiempo de vuelo del salto (con el celular alcanza) y cargalo acá. Para drop jump, sumá el
+          tiempo de contacto y la altura de caída.
+        </p>
+        <div className="seg-ctrl" style={{ marginBottom: 10 }}>
+          {([["salto_simple", "Salto simple"], ["drop_jump", "Drop jump"]] as [typeof testType, string][]).map(([t, label]) => (
+            <button key={t} className={testType === t ? "active" : ""} onClick={() => setTestType(t)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <label style={labelStyle}>Tiempo de vuelo (s)</label>
+            <input type="number" inputMode="decimal" step="0.01" value={flightTime} onChange={(e) => setFlightTime(e.target.value)} style={inputStyle} />
+          </div>
+          {testType === "drop_jump" && (
+            <>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <label style={labelStyle}>Tiempo de contacto (s)</label>
+                <input type="number" inputMode="decimal" step="0.01" value={contactTime} onChange={(e) => setContactTime(e.target.value)} style={inputStyle} />
+              </div>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <label style={labelStyle}>Altura de caída (cm)</label>
+                <input type="number" inputMode="decimal" value={dropHeight} onChange={(e) => setDropHeight(e.target.value)} style={inputStyle} />
+              </div>
+            </>
+          )}
+        </div>
+        <button className="btn-primary" onClick={saveStrengthTest}>Guardar test</button>
+        {testStatus && <div className="status-msg">{testStatus}</div>}
+
+        {jumpChartData.length >= 2 && (
+          <div style={{ marginTop: 14 }}>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Altura de salto (cm)</div>
+            <ForjaLineChart data={jumpChartData as Array<Record<string, unknown>>} xKey="label" yKey="value" color="var(--brass)" yUnit="cm" />
+          </div>
+        )}
+
+        {strengthTests.length > 0 && (
+          <div style={{ marginTop: 14, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+            {strengthTests.map((t) => (
+              <div className="session-item" key={t.id}>
+                <span className="session-date">{t.date}</span>
+                <span className="muted">
+                  {t.test_type === "drop_jump" ? "Drop jump" : "Salto simple"} · {t.jump_height_cm.toFixed(1)}cm
+                  {t.reactive_stability_q != null ? ` · Q ${t.reactive_stability_q.toFixed(2)}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      )}
+
       {weightChartData.length >= 2 && (
         <div className="card" style={{ marginTop: 12 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Peso corporal ({unitLabel})</div>
@@ -258,14 +385,23 @@ export default function Biometrics() {
 
       <div className="card" style={{ marginTop: 12 }}>
         <h3 style={{ fontSize: 14, marginBottom: 4 }}>Historial</h3>
-        {history.length === 0 && (
+        {loadError && (
+          <EmptyState
+            icon={<span style={{ fontSize: 36 }}>📡</span>}
+            title="No pudimos cargar tu historial"
+            subtitle="Revisá tu conexión con el backend."
+            actionLabel="Reintentar"
+            onAction={loadAll}
+          />
+        )}
+        {!loadError && history.length === 0 && (
           <EmptyState
             icon={<User size={36} strokeWidth={1.5} />}
             title="Cargá tu primer check-in"
             subtitle="para empezar a ver tu evolución."
           />
         )}
-        {history.map((h) => (
+        {!loadError && history.map((h) => (
           <div className="session-item" key={h.id}>
             <span className="session-date">{h.date}</span>
             <span className="muted">

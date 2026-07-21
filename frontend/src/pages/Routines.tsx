@@ -27,7 +27,11 @@ function normalizeExerciseName(s: string): string {
     .trim();
 }
 
-export default function Routines() {
+type RoutinesProps = {
+  onOpenExerciseHistory?: (name: string) => void;
+};
+
+export default function Routines({ onOpenExerciseHistory }: RoutinesProps) {
   const [types, setTypes] = useState<WorkoutType[]>([]);
   const [customRoutines, setCustomRoutines] = useState<CustomRoutine[]>([]);
   const [selected, setSelected] = useState<RoutineItem | null>(null);
@@ -43,6 +47,8 @@ export default function Routines() {
   const [newRoutineExercises, setNewRoutineExercises] = useState("");
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const touchStartX = useRef(0);
   const touchWasDrag = useRef(false);
@@ -52,18 +58,37 @@ export default function Routines() {
     ...customRoutines.map((r) => ({ kind: "custom" as const, routine: r })),
   ];
 
+  async function loadCatalog() {
+    setLoadError(false);
+    try {
+      const [wt, cr, names] = await Promise.all([
+        api.getWorkoutTypes(),
+        api.getCustomRoutines(),
+        api.getExerciseNames(),
+      ]);
+      setTypes(wt);
+      setCustomRoutines(cr);
+      setExerciseNames(names);
+    } catch {
+      setLoadError(true);
+    }
+  }
+
   useEffect(() => {
-    api.getWorkoutTypes().then(setTypes).catch(() => {});
-    api.getCustomRoutines().then(setCustomRoutines).catch(() => {});
-    api.getExerciseNames().then(setExerciseNames).catch(() => {});
+    loadCatalog();
   }, []);
 
   async function refreshExercises(item: RoutineItem) {
-    const list =
-      item.kind === "system"
-        ? await api.getWorkoutTypeExercises(item.type.id).catch(() => [])
-        : await api.getCustomRoutineExercises(item.routine.id).catch(() => []);
-    setExercises(list);
+    try {
+      const list =
+        item.kind === "system"
+          ? await api.getWorkoutTypeExercises(item.type.id)
+          : await api.getCustomRoutineExercises(item.routine.id);
+      setExercises(list);
+    } catch {
+      setExercises([]);
+      setActionError("No se pudieron cargar los ejercicios. Revisá tu conexión.");
+    }
   }
 
   async function selectItem(item: RoutineItem) {
@@ -76,37 +101,53 @@ export default function Routines() {
 
   async function handleRemove(name: string) {
     if (!selected) return;
-    if (selected.kind === "system") await api.removeExercise(selected.type.id, name).catch(() => {});
-    else await api.removeExerciseFromRoutine(selected.routine.id, name).catch(() => {});
-    setSwipedExercise(null);
-    setEditTarget(null);
-    await refreshExercises(selected);
+    setActionError(null);
+    try {
+      if (selected.kind === "system") await api.removeExercise(selected.type.id, name);
+      else await api.removeExerciseFromRoutine(selected.routine.id, name);
+      setSwipedExercise(null);
+      setEditTarget(null);
+      await refreshExercises(selected);
+    } catch {
+      setActionError(`No se pudo eliminar "${name}". Probá de nuevo.`);
+    }
   }
 
   async function handleAdd() {
     const name = newName.trim();
     if (!name || !selected || isAdding) return;
     setIsAdding(true);
+    setActionError(null);
     const sets = newSets ? Number(newSets) : null;
     const reps = newReps.trim() || null;
-    if (selected.kind === "system") await api.addExercise(selected.type.id, name, sets, reps).catch(() => {});
-    else await api.addExerciseToRoutine(selected.routine.id, name, sets, reps).catch(() => {});
-    await refreshExercises(selected);
-    if (!exerciseNames.some((n) => n.toLowerCase() === name.toLowerCase())) {
-      setExerciseNames((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
+    try {
+      if (selected.kind === "system") await api.addExercise(selected.type.id, name, sets, reps);
+      else await api.addExerciseToRoutine(selected.routine.id, name, sets, reps);
+      await refreshExercises(selected);
+      if (!exerciseNames.some((n) => n.toLowerCase() === name.toLowerCase())) {
+        setExerciseNames((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
+      }
+      setNewName(""); setNewSets(""); setNewReps("");
+    } catch {
+      setActionError(`No se pudo agregar "${name}". Probá de nuevo.`);
+    } finally {
+      setIsAdding(false);
     }
-    setNewName(""); setNewSets(""); setNewReps("");
-    setIsAdding(false);
   }
 
   async function handleSaveEdit() {
     if (!editTarget || !selected) return;
+    setActionError(null);
     const sets = editTarget.sets ? Number(editTarget.sets) : null;
     const reps = editTarget.reps.trim() || null;
-    if (selected.kind === "system") await api.patchExercise(selected.type.id, editTarget.exerciseName, sets, reps).catch(() => {});
-    else await api.patchRoutineExercise(selected.routine.id, editTarget.exerciseName, sets, reps).catch(() => {});
-    await refreshExercises(selected);
-    setEditTarget(null);
+    try {
+      if (selected.kind === "system") await api.patchExercise(selected.type.id, editTarget.exerciseName, sets, reps);
+      else await api.patchRoutineExercise(selected.routine.id, editTarget.exerciseName, sets, reps);
+      await refreshExercises(selected);
+      setEditTarget(null);
+    } catch {
+      setActionError("No se pudo guardar el cambio. Probá de nuevo.");
+    }
   }
 
   async function handleCreateRoutine() {
@@ -114,19 +155,30 @@ export default function Routines() {
     const exNames = newRoutineExercises.split(",").map((s) => s.trim()).filter(Boolean);
     if (!name || exNames.length === 0 || isCreatingRoutine) return;
     setIsCreatingRoutine(true);
-    await api.createCustomRoutine({ name, exercises: exNames }).catch(() => {});
-    const updated = await api.getCustomRoutines().catch(() => []);
-    setCustomRoutines(updated);
-    setNewRoutineName(""); setNewRoutineExercises("");
-    setIsCreatingRoutine(false);
-    setShowCreateForm(false);
+    setActionError(null);
+    try {
+      await api.createCustomRoutine({ name, exercises: exNames });
+      const updated = await api.getCustomRoutines();
+      setCustomRoutines(updated);
+      setNewRoutineName(""); setNewRoutineExercises("");
+      setShowCreateForm(false);
+    } catch {
+      setActionError(`No se pudo crear la rutina "${name}". Probá de nuevo.`);
+    } finally {
+      setIsCreatingRoutine(false);
+    }
   }
 
   async function handleDeleteRoutine(id: number) {
-    await api.deleteCustomRoutine(id).catch(() => {});
-    setCustomRoutines((prev) => prev.filter((r) => r.id !== id));
-    if (selected?.kind === "custom" && selected.routine.id === id) {
-      setSelected(null); setExercises([]);
+    setActionError(null);
+    try {
+      await api.deleteCustomRoutine(id);
+      setCustomRoutines((prev) => prev.filter((r) => r.id !== id));
+      if (selected?.kind === "custom" && selected.routine.id === id) {
+        setSelected(null); setExercises([]);
+      }
+    } catch {
+      setActionError("No se pudo eliminar la rutina. Probá de nuevo.");
     }
   }
 
@@ -166,6 +218,17 @@ export default function Routines() {
       <p className="eyebrow">Rutinas</p>
       <h2 style={{ marginBottom: 16 }}>Mis ejercicios</h2>
 
+      {actionError && <div className="status-msg" style={{ marginBottom: 12 }}>{actionError}</div>}
+
+      {loadError ? (
+        <EmptyState
+          icon={<span style={{ fontSize: 40 }}>📡</span>}
+          title="No pudimos cargar tus rutinas"
+          subtitle="Revisá tu conexión con el backend."
+          actionLabel="Reintentar"
+          onAction={loadCatalog}
+        />
+      ) : (
       <div className="routines-layout">
 
         {/* ── Left col: type/routine list + create button ─── */}
@@ -308,9 +371,23 @@ export default function Routines() {
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 14, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {ex.exercise_name}
-                            </span>
+                            {onOpenExerciseHistory ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onOpenExerciseHistory(ex.exercise_name); }}
+                                title="Ver historial de este ejercicio"
+                                style={{
+                                  fontSize: 14, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                  background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", cursor: "pointer",
+                                  textDecoration: "underline", textDecorationColor: "var(--line)", textUnderlineOffset: 3, textAlign: "left", width: "100%",
+                                }}
+                              >
+                                {ex.exercise_name}
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: 14, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {ex.exercise_name}
+                              </span>
+                            )}
                             {targetLabel(ex) && (
                               <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--brass)" }}>
                                 {targetLabel(ex)}
@@ -411,7 +488,9 @@ export default function Routines() {
           )}
         </div>{/* .routines-detail-col */}
 
-      </div>{/* .routines-layout */}
+      </div>
+      // .routines-layout
+      )}
     </div>
   );
 }
