@@ -198,6 +198,23 @@ sessionsRouter.get(
   })
 );
 
+// DELETE /api/sessions/:id -> borra una sesión propia (y en cascada sus
+// series, via ON DELETE CASCADE de session_exercises). No recalcula
+// personal_records retroactivamente: si la sesión borrada tenía el PR
+// vigente, ese PR queda "stale" hasta la próxima sesión que lo supere o
+// iguale -- aceptable para el caso de uso (borrar un registro cargado mal),
+// no vale la pena la complejidad de recalcular sobre todo el historial acá.
+sessionsRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const clientId = req.clientId;
+    const existing = await db.get<{ id: number }>(`SELECT id FROM sessions WHERE id = ? AND client_id = ?`, [req.params.id, clientId]);
+    if (!existing) return res.status(404).json({ error: "Sesión no encontrada" });
+    await db.run(`DELETE FROM sessions WHERE id = ? AND client_id = ?`, [req.params.id, clientId]);
+    res.json({ ok: true });
+  })
+);
+
 // GET /api/sessions/:id -> incluye resumen de indicadores (tonelaje, peso
 // medio, intensidad promedio) calculado sobre las series de trabajo.
 sessionsRouter.get(
